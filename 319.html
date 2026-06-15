@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo dos Detetives: Ache o Intruso!</title>
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --background: #F7FFF7;
+            --text: #2F3E46;
+            --white: #FFFFFF;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--white);
+            border: 4px solid var(--secondary);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: #E8F1F2;
+            padding: 15px;
+            border-radius: 20px;
+            border: 2px dashed var(--primary);
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .intro-text {
+            font-size: 15px;
+            line-height: 1.4;
+            background: #FFF;
+            padding: 10px;
+            border-radius: 12px;
+            border-left: 5px solid var(--accent);
+        }
+
+        .card {
+            background: #F8F9FA;
+            border: 3px solid #E9ECEF;
+            border-radius: 18px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .card.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .badge {
+            background: var(--secondary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: inline-block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 17px;
+            margin-bottom: 15px;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        .intruso-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .btn-intruso {
+            background: white;
+            border: 3px solid #CED4DA;
+            border-radius: 16px;
+            padding: 15px 10px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-intruso.selected {
+            border-color: var(--primary);
+            background: #FFEBEB;
+            box-shadow: 0 0 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .emoji-img {
+            font-size: 38px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Botões de Navegação */
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .btn-nav {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #D94E4E;
+            font-weight: bold;
+        }
+
+        .btn-nav:disabled {
+            background: #CCCCCC;
+            box-shadow: 0 4px 0 #999999;
+            cursor: not-allowed;
+        }
+
+        /* Resultados */
+        .result-box { text-align: center; }
+        .score-big {
+            font-size: 44px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+            background: #FFF9E6;
+            display: inline-block;
+            padding: 8px 25px;
+            border-radius: 50px;
+            border: 3px dashed var(--accent);
+        }
+
+        .feedback-tag { font-size: 16px; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 12px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: #F1F3F5; padding: 8px; border-radius: 10px; font-size: 14px; }
+        .report-section { text-align: left; background: #FAF9F6; padding: 12px; border-radius: 14px; border: 2px solid #E5E5E5; }
+        .report-section h3 { font-size: 14px; margin-bottom: 6px; color: #495057; border-bottom: 2px solid #E9ECEF; padding-bottom: 2px; }
+        
+        .skill-list { list-style: none; }
+        .skill-list li { font-size: 13px; margin-bottom: 4px; padding-left: 20px; position: relative; }
+        .skill-list.dom-list li::before { content: "⭐"; position: absolute; left: 0; }
+        .skill-list.rev-list li::before { content: "✏️"; position: absolute; left: 0; }
+
+        footer { text-align: center; margin-top: 20px; font-size: 12px; color: #6C757D; font-weight: bold; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🕵️‍♂️ Detetive de Computador</h1>
+            
+        </header>
+
+        <div id="zona-questoes"></div>
+
+        <div class="card" id="tela-resultado">
+            <span class="badge" style="background-color: var(--primary);">🏆 Fim do Desafio!</span>
+            <div class="result-box">
+                <h2>Sua Nota Final:</h2>
+                <div class="score-big" id="nota-final">0.0</div>
+                <div class="feedback-tag" id="feedback-texto">Feedback</div>
+
+                <div class="stats-grid">
+                    <div class="stat-card"><strong>Acertos:</strong> <span id="total-acertos" style="color: green; font-weight: bold;">0</span></div>
+                    <div class="stat-card"><strong>Erros:</strong> <span id="total-erros" style="color: red; font-weight: bold;">0</span></div>
+                    <div class="stat-card" style="grid-column: span 2;"><strong>Aproveitamento:</strong> <span id="percentual">0%</span></div>
+                </div>
+
+                <div class="report-section">
+                    <h3>📋 Relatório do Detetive</h3>
+                    <div id="box-dominadas"><ul class="skill-list dom-list" id="lista-dominadas"></ul></div>
+                    <div id="box-revisar" style="margin-top: 5px;"><ul class="skill-list rev-list" id="lista-revisar"></ul></div>
+                </div>
+
+                <button class="btn-nav" onclick="reiniciarJogo()" style="margin-top: 15px; background-color: var(--secondary); box-shadow: 0 4px 0 #3ba8a0;">Jogar Novamente</button>
+            </div>
+        </div>
+
+        <div class="nav-container" id="controles">
+            <button class="btn-nav" id="btn-voltar" onclick="mudarCard(-1)" disabled>Voltar</button>
+            <button class="btn-nav" id="btn-avancar" onclick="mudarCard(1)">Avançar ➡️</button>
+        </div>
+    </div>
+
+    <footer>
+        Profª Adriana Bett Terebinto | Atividade Pedagógica
+    </footer>
+
+    <script>
+        // Banco de dados super simplificado para o 3º Ano
+        const bancoQuestoes = [
+            {
+                titulo: "Caixa de Imagens",
+                enunciado: "Aqui só pode IMAGENS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Foto de gatinho", emoji: "🐱", correto: false },
+                    { texto: "Desenho do Sol", emoji: "☀️", correto: false },
+                    { texto: "Foto da praia", emoji: "🏖️", correto: false },
+                    { texto: "Música do fone", emoji: "🎧", correto: true } // Intruso
+                ],
+                habilidade: "Sabe separar fotos e figuras de barulhos."
+            },
+            {
+                titulo: "Caixa de Textos",
+                enunciado: "Aqui só entram TEXTOS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Nome", emoji: "👦", correto: false },
+                    { texto: "Frase", emoji: "💬", correto: false },
+                    { texto: "Bilhete", emoji: "✍️", correto: false },
+                    { texto: "Música", emoji: "🎵", correto: true } // Intruso
+                ],
+                habilidade: "Sabe separar palavras escritas de áudios tocados."
+            },
+            {
+                titulo: "Caixa de Sons",
+                enunciado: "Aqui só entram SONS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Latido do cão", emoji: "🐕", correto: false },
+                    { texto: "Canto do pássaro", emoji: "🦜", correto: false },
+                    { texto: "Risada engraçada", emoji: "😂", correto: false },
+                    { texto: "25/12/2026", emoji: "📅", correto: true } // Intruso
+                ],
+                habilidade: "Sabe separar barulhos e áudios de dias do calendário."
+            },
+            {
+                titulo: "Caixa de Números",
+                enunciado: "Aqui só entram NÚMEROS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Idade: 8 ", emoji: "🎂", correto: false },
+                    { texto: "Placar: 3 ", emoji: "⚽", correto: false },
+                    { texto: "Quantidade: 10", emoji: "✏️", correto: false },
+                    { texto: "Poesia da escola", emoji: "📜", correto: true } // Intruso
+                ],
+                habilidade: "Sabe separar números de histórias escritas."
+            },
+            {
+                titulo: "Caixa de Datas",
+                enunciado: "Aqui só entram DATAS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Dia do professor", emoji: "🧑‍🏫", correto: false },
+                    { texto: "Dia do Natal", emoji: "🎄", correto: false },
+                    { texto: "Dia das crianças", emoji: "🎁", correto: false },
+                    { texto: "Foto de um bolo", emoji: "🍰", correto: true } // Intruso
+                ],
+                habilidade: "Sabe separar dias do calendário de fotos tiradas."
+            },
+            {
+                titulo: "Caixa de Fotos",
+                enunciado: "Aqui só entra IMAGEM, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Desenho animado", emoji: "📺", correto: false },
+                    { texto: "Mapa do tesouro", emoji: "🗺️", correto: false },
+                    { texto: "Foto da família", emoji: "🏠", correto: false },
+                    { texto: "Preço do pastel", emoji: "💵", correto: true } // Intruso
+                ],
+                habilidade: "Sabe afastar imagens de valores em dinheiro."
+            },
+            {
+                titulo: "Caixa de Barulhos",
+                enunciado: "Todos só entra SONS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Toque do celular", emoji: "📱", correto: false },
+                    { texto: "Buzina do carro", emoji: "🚗", correto: false },
+                    { texto: "Assobio forte", emoji: "😗", correto: false },
+                    { texto: "Livro de histórias", emoji: "📚", correto: true } // Intruso
+                ],
+                habilidade: "Sabe afastar barulhos de livros de leitura."
+            },
+            {
+                titulo: "Caixa de Leituras" ,
+                enunciado: "Aqui só entra LETRAS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Mensagem do dia", emoji: "📱", correto: false },
+                    { texto: "Receita de bolo", emoji: "🥪", correto: false },
+                    { texto: "Nome da escola", emoji: "🏫", correto: false },
+                    { texto: "Voz no gravador", emoji: "🎤", correto: true } // Intruso
+                ],
+                habilidade: "Sabe separar letras lidas de vozes faladas."
+            },
+            {
+                titulo: "Caixa de Contar",
+                enunciado: "Aqui só entra NÚMEROS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Número da casa", emoji: "🔢", correto: false },
+                    { texto: "Nota da prova", emoji: "💯", correto: false },
+                    { texto: "Tamanho da régua", emoji: "📏", correto: false },
+                    { texto: "Pintura do mural", emoji: "🖍️", correto: true } // Intruso
+                ],
+                habilidade: "Sabe separar medidas numéricas de pinturas artísticas."
+            },
+            {
+                titulo: "Caixa do Tempo",
+                enunciado: "Só entra DATAS, quem é o INTRUSO?",
+                opcoes: [
+                    { texto: "Hoje: Segunda-feira", emoji: "📆", correto: false },
+                    { texto: "Data de nascimento", emoji: "👶", correto: false },
+                    { texto: "Dia de ir viajar", emoji: "✈️", correto: false },
+                    { texto: "Canto de parabéns", emoji: "🎶", correto: true } // Intruso
+                ],
+                habilidade: "Sabe separar o tempo na folhinha de músicas cantadas."
+            }
+        ];
+
+        let ordemFases = [];
+        let indexAtual = 0;
+        let respostasAluno = {}; 
+
+        function iniciarJogo() {
+            const zona = document.getElementById('zona-questoes');
+            zona.innerHTML = "";
+            ordemFases = Array.from({length: bancoQuestoes.length}, (_, i) => i);
+            
+            // Embaralha as fases
+            ordemFases.sort(() => Math.random() - 0.5);
+            respostasAluno = {};
+            indexAtual = 0;
+
+            ordemFases.forEach((bancoIdx, progresso) => {
+                const q = bancoQuestoes[bancoIdx];
+                
+                const card = document.createElement('div');
+                card.className = `card ${progresso === 0 ? 'active' : ''}`;
+                card.id = `fase-${progresso}`;
+
+                const badge = document.createElement('span');
+                badge.className = "badge";
+                badge.innerText = `Missão ${progresso + 1} de 10`;
+                card.appendChild(badge);
+
+                const h2 = document.createElement('h2');
+                h2.innerHTML = `<strong>${q.titulo}</strong><br>${q.enunciado}`;
+                card.appendChild(h2);
+
+                const grid = document.createElement('div');
+                grid.className = "intruso-grid";
+
+                let opcoesEmbaralhadas = [...q.opcoes];
+                opcoesEmbaralhadas.sort(() => Math.random() - 0.5);
+
+                opcoesEmbaralhadas.forEach((opt) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-intruso";
+                    btn.innerHTML = `<span class="emoji-img">${opt.emoji}</span>${opt.texto}`;
+                    
+                    btn.onclick = function() {
+                        marcarOpcao(progresso, btn, opt.correto);
+                    };
+                    grid.appendChild(btn);
+                });
+
+                card.appendChild(grid);
+                zona.appendChild(card);
+            });
+
+            document.getElementById('tela-resultado').classList.remove('active');
+            document.getElementById('controles').style.display = 'flex';
+            document.getElementById('btn-voltar').disabled = true;
+            document.getElementById('btn-avancar').innerText = "Avançar ➡️";
+            document.getElementById('btn-avancar').style.backgroundColor = "var(--primary)";
+            document.getElementById('btn-avancar').style.boxShadow = "0 4px 0 #D94E4E";
+        }
+
+        window.onload = function() {
+            iniciarJogo();
+        };
+
+        function marcarOpcao(faseIdx, botaoClicado, eCorreto) {
+            const cardPai = document.getElementById(`fase-${faseIdx}`);
+            const botoes = cardPai.querySelectorAll('.btn-intruso');
+            botoes.forEach(b => b.classList.remove('selected'));
+
+            botaoClicado.classList.add('selected');
+            respostasAluno[faseIdx] = eCorreto; 
+        }
+
+        function mudarCard(direcao) {
+            if (direcao === 1 && indexAtual === bancoQuestoes.length - 1) {
+                finalizarAtividade();
+                return;
+            }
+
+            document.getElementById(`fase-${indexAtual}`).classList.remove('active');
+            indexAtual += direcao;
+            document.getElementById(`fase-${indexAtual}`).classList.add('active');
+
+            document.getElementById('btn-voltar').disabled = (indexAtual === 0);
+            
+            if (indexAtual === bancoQuestoes.length - 1) {
+                document.getElementById('btn-avancar').innerText = "Ver Nota 📊";
+                document.getElementById('btn-avancar').style.backgroundColor = "#4ECDC4";
+                document.getElementById('btn-avancar').style.boxShadow = "0 4px 0 #3ba8a0";
+            } else {
+                document.getElementById('btn-avancar').innerText = "Avançar ➡️";
+                document.getElementById('btn-avancar').style.backgroundColor = "var(--primary)";
+                document.getElementById('btn-avancar').style.boxShadow = "0 4px 0 #D94E4E";
+            }
+        }
+
+        function finalizarAtividade() {
+            let acertos = 0;
+            let totalQuestoes = bancoQuestoes.length;
+
+            let dominadasHTML = "<strong>O que você acertou:</strong>";
+            let revisarHTML = "<strong>O que precisamos treinar mais:</strong>";
+            let temDominada = false;
+            let temRevisar = false;
+
+            for (let i = 0; i < totalQuestoes; i++) {
+                let realIdx = ordemFases[i];
+                let qReal = bancoQuestoes[realIdx];
+
+                if (respostasAluno[i] === true) {
+                    acertos++;
+                    dominadasHTML += `<li>Muito bem na ${qReal.titulo}.</li>`;
+                    temDominada = true;
+                } else {
+                    revisarHTML += `<li>Atenção com a ${qReal.titulo}.</li>`;
+                    temRevisar = true;
+                }
+            }
+
+            let erros = totalQuestoes - acertos;
+            let notaFinal = acertos; 
+            let percentual = Math.round((acertos / totalQuestoes) * 100);
+
+            document.getElementById(`fase-${indexAtual}`).classList.remove('active');
+            document.getElementById('controles').style.display = 'none';
+            document.getElementById('tela-resultado').classList.add('active');
+
+            document.getElementById('nota-final').innerText = notaFinal.toFixed(1);
+            document.getElementById('total-acertos').innerText = acertos;
+            document.getElementById('total-erros').innerText = erros;
+            document.getElementById('percentual').innerText = percentual + "%";
+
+            let feedback = document.getElementById('feedback-texto');
+            if (notaFinal >= 9) {
+                feedback.innerText = "NOTA 9–10: Excelente domínio do conteúdo.";
+                feedback.style.backgroundColor = "#D4EDDA"; feedback.style.color = "#155724";
+            } else if (notaFinal >= 7) {
+                feedback.innerText = "NOTA 7–8: Bom domínio do conteúdo.";
+                feedback.style.backgroundColor = "#D1ECF1"; feedback.style.color = "#0C5460";
+            } else if (notaFinal >= 5) {
+                feedback.innerText = "NOTA 5–6: Domínio parcial. Recomenda-se revisão.";
+                feedback.style.backgroundColor = "#FFF3CD"; feedback.style.color = "#856404";
+            } else {
+                feedback.innerText = "NOTA 0–4: Necessita reforço e retomada do conteúdo.";
+                feedback.style.backgroundColor = "#F8D7DA"; feedback.style.color = "#721C24";
+            }
+
+            document.getElementById('lista-dominadas').innerHTML = temDominada ? dominadasHTML : "<strong>O que você acertou:</strong><li>Clique para jogar de novo e pontuar!</li>";
+            document.getElementById('lista-revisar').innerHTML = temRevisar ? revisarHTML : "<strong>O que precisamos treinar mais:</strong><li>Parabéns! Você descobriu todos os intrusos!</li>";
+        }
+
+        function reiniciarJogo() {
+            iniciarJogo();
+        }
+    </script>
+</body>
+</html>
